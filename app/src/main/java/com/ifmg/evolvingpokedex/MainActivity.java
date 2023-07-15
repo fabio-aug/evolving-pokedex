@@ -2,30 +2,42 @@ package com.ifmg.evolvingpokedex;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.content.Intent;
 import android.os.Bundle;
-import android.util.Log;
 
 import com.ifmg.evolvingpokedex.classes.getEvolution.Evolution;
 import com.ifmg.evolvingpokedex.classes.getEvolution.PokemonEvolution;
 import com.ifmg.evolvingpokedex.classes.getPokemon.Pokemon;
 import com.ifmg.evolvingpokedex.classes.getSpecie.PokemonSpecies;
+import com.ifmg.evolvingpokedex.databinding.ActivityMainBinding;
 
 import java.io.IOException;
 
 public class MainActivity extends AppCompatActivity {
-    public int getPokemon(String pokemonName) throws IOException {
-        int idSpecie = -1;
+    private ActivityMainBinding binding;
 
-        PokedexApplication app = (PokedexApplication) getApplication();
+    public void openViewEvolution(String text) {
+        Intent intent = new Intent(this, ViewPokemonActivity.class);
+        intent.putExtra(ViewPokemonActivity.LIST_POKEMON_NAMES, text);
+        startActivity(intent);
+    }
 
-        Pokemon pokemon = app.getPokemonRepo().getPokemonByName(pokemonName);
-        String[] aux = pokemon.species.url.split("/");
-
-        if (aux.length >= 1) {
-            idSpecie = Integer.parseInt(aux[aux.length - 1]);
+    private String getNames(Evolution[] evolves) {
+        StringBuilder compose = new StringBuilder(this.binding.nomePokemon.getText().toString());
+        for (Evolution evo1 : evolves) {
+            compose.append("\n").append(evo1.species.name);
+            for (Evolution evo2 : evo1.evolves_to) {
+                compose.append("\n").append(evo2.species.name);
+            }
         }
+        return compose.toString();
+    }
 
-        return idSpecie;
+    public String getEvolutions(int idEvolutionChain) throws IOException {
+        PokedexApplication app = (PokedexApplication) getApplication();
+        PokemonEvolution evolution = app.getPokemonRepo().getEvolutionChainById(idEvolutionChain);
+
+        return getNames(evolution.chain.evolves_to);
     }
 
     public int getSpecie(int idSpecie) throws IOException {
@@ -43,12 +55,19 @@ public class MainActivity extends AppCompatActivity {
         return idEvolutionChain;
     }
 
-    public void getEvolutions(int idEvolutionChain) throws IOException {
+    public int getPokemon(String pokemonName) throws IOException {
+        int idSpecie = -1;
+
         PokedexApplication app = (PokedexApplication) getApplication();
-        PokemonEvolution evolution = app.getPokemonRepo().getEvolutionChainById(idEvolutionChain);
-        for (Evolution evo : evolution.chain.evolves_to) {
-            Log.d("POKEDEX-PRINT", evo.species.name);
+
+        Pokemon pokemon = app.getPokemonRepo().getPokemonByName(pokemonName);
+        String[] aux = pokemon.species.url.split("/");
+
+        if (aux.length >= 1) {
+            idSpecie = Integer.parseInt(aux[aux.length - 1]);
         }
+
+        return idSpecie;
     }
 
     public void fetchData(String pokemonName) {
@@ -62,7 +81,7 @@ public class MainActivity extends AppCompatActivity {
                     int idEvolutionChain = getSpecie(idSpecie);
 
                     if (idEvolutionChain != -1) {
-                        getEvolutions(idEvolutionChain);
+                        openViewEvolution(getEvolutions(idEvolutionChain));
                     }
                 }
             } catch (IOException e) {
@@ -71,11 +90,17 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    public void onClickButton() {
+        String pokemonName = this.binding.nomePokemon.getText().toString();
+        fetchData(pokemonName);
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        this.binding = ActivityMainBinding.inflate(getLayoutInflater());
+        setContentView(this.binding.getRoot());
 
-        fetchData("mudkip");
+        this.binding.button.setOnClickListener((v) -> onClickButton());
     }
 }

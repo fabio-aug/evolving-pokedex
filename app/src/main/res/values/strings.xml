@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">evolving-pokedex</string>
+    <string name="pesquisar">Pesquisar</string>
+    <string name="text">Digite o nome do pokemon</string>
 </resources>
